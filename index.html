@@ -2,226 +2,493 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Bumble Reference Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* ── Tokens ──────────────────────────────────────────────────────── */
 :root {
-  --header:  #2a2a2a;
-  --body:    #1e1e1e;
-  --sidebar: #252525;
-  --textbox: #252525;
-  --search:  #2a2a2a;
-  --border:  #3a3a3a;
-  --accent:  #FFD500;
-  --text:    #e0e0e0;
-  --dim:     #888888;
-  --selfg:   #1d1d1f;
-  --userbg:  #2d2b00;
-  --aibg:    #2a2a2a;
+  --c-bg:       #141414;
+  --c-surface:  #1e1e1e;
+  --c-raised:   #272727;
+  --c-border:   #333;
+  --c-accent:   #FFD500;
+  --c-accent-d: #e6bf00;
+  --c-accent-s: rgba(255,213,0,.10);
+  --c-text:     #f0f0f0;
+  --c-muted:    #a0a0a0;
+  --c-dim:      #666;
+  --c-selfg:    #1a1a1a;
+  --c-userbg:   #2d2b00;
+  --c-aibg:     #272727;
+
+  --f: 'Inter', system-ui, sans-serif;
+
+  /* Type scale */
+  --t-xs:  11px;
+  --t-sm:  12px;
+  --t-md:  14px;
+  --t-lg:  16px;
+  --t-xl:  20px;
+  --t-2xl: 24px;
+
+  /* Spacing */
+  --s-1: 4px;   --s-2: 8px;   --s-3: 12px;
+  --s-4: 16px;  --s-5: 20px;  --s-6: 24px;
+
+  --radius: 10px;
+  --nav-w: 220px;
+  --nav-bot: 64px; /* mobile bottom nav height */
 }
+
+/* ── Reset ───────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; font-family: -apple-system, "SF Pro Text", system-ui, sans-serif; background: var(--body); color: var(--text); font-size: 14px; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--f);
+  font-size: var(--t-md);
+  background: var(--c-bg);
+  color: var(--c-text);
+  height: 100dvh;
+  overflow: hidden;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
 
-/* ── Layout ── */
-#app         { display: flex; flex-direction: column; height: 100vh; }
-#header      { background: var(--header); padding: 16px 24px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
-#header h1   { font-size: 16px; font-weight: 700; color: var(--accent); }
-#body        { display: flex; flex: 1; overflow: hidden; }
-#nav         { width: 200px; background: var(--sidebar); flex-shrink: 0; border-right: 1px solid var(--border); padding-top: 16px; }
-#content     { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+/* ── App shell ───────────────────────────────────────────────────── */
+#app    { display: flex; flex-direction: column; height: 100dvh; }
+#topbar { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4) var(--s-5); background: var(--c-surface); border-bottom: 1px solid var(--c-border); flex-shrink: 0; }
+#topbar h1 { font-size: var(--t-lg); font-weight: 700; color: var(--c-accent); letter-spacing: -.3px; }
+#body   { display: flex; flex: 1; overflow: hidden; }
 
-/* ── Nav items ── */
-.nav-item    { padding: 16px 22px; cursor: pointer; font-size: 14px; color: var(--text); transition: background .15s; }
-.nav-item:hover { background: #2e2e2e; }
-.nav-item.active { background: #2d2b00; color: var(--accent); font-weight: 700; }
+/* ── Desktop sidebar nav ─────────────────────────────────────────── */
+#nav {
+  width: var(--nav-w);
+  background: var(--c-surface);
+  border-right: 1px solid var(--c-border);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--s-3) var(--s-2);
+  gap: var(--s-1);
+}
+.nav-item {
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: 11px var(--s-4);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: var(--t-md);
+  font-weight: 500;
+  color: var(--c-muted);
+  transition: background .12s, color .12s;
+  user-select: none;
+}
+.nav-item:hover { background: var(--c-raised); color: var(--c-text); }
+.nav-item.active { background: var(--c-accent-s); color: var(--c-accent); font-weight: 600; }
+.nav-icon { font-size: 18px; line-height: 1; }
 
-/* ── Panels ── */
-.panel       { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+/* ── Mobile bottom nav ───────────────────────────────────────────── */
+#bot-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: var(--nav-bot);
+  background: var(--c-surface);
+  border-top: 1px solid var(--c-border);
+  z-index: 100;
+}
+.bot-nav-inner { display: flex; height: 100%; }
+.bot-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px;
+  cursor: pointer; font-size: var(--t-xs); font-weight: 500;
+  color: var(--c-muted); transition: color .12s;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.bot-item:hover, .bot-item.active { color: var(--c-accent); }
+.bot-icon { font-size: 22px; line-height: 1; }
+
+/* ── Content area ────────────────────────────────────────────────── */
+#content { flex: 1; display: flex; overflow: hidden; flex-direction: column; }
+
+/* ── Panels ──────────────────────────────────────────────────────── */
+.panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
 .panel.active { display: flex; }
 
-/* ── Tab bars ── */
-.tab-bar     { display: flex; background: var(--header); padding: 0 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.tab-btn     { padding: 11px 14px 0; cursor: pointer; font-size: 12px; color: var(--dim); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; user-select: none; }
-.tab-btn:hover { color: var(--text); }
-.tab-btn.active { color: var(--accent); font-weight: 700; border-bottom-color: var(--accent); }
-.sub-tab-bar { display: flex; background: var(--body); padding: 0 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.sub-tab-btn { padding: 9px 14px 0; cursor: pointer; font-size: 12px; color: var(--dim); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; user-select: none; }
-.sub-tab-btn:hover { color: var(--text); }
-.sub-tab-btn.active { color: var(--accent); font-weight: 700; border-bottom-color: var(--accent); }
+/* ── Pill tab bars ───────────────────────────────────────────────── */
+.pill-bar {
+  display: flex; gap: var(--s-2);
+  padding: var(--s-3) var(--s-4) 0;
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0; overflow-x: auto;
+  scrollbar-width: none;
+}
+.pill-bar::-webkit-scrollbar { display: none; }
+.pill {
+  padding: 7px 16px;
+  border-radius: 20px 20px 0 0;
+  font-size: var(--t-md);
+  font-weight: 500;
+  color: var(--c-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .12s, border-color .12s;
+}
+.pill:hover { color: var(--c-text); }
+.pill.active { color: var(--c-accent); font-weight: 600; border-bottom-color: var(--c-accent); }
 
-/* ── Sub-panels ── */
-.sub-panel   { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+/* Sub-pill bar (lighter bg) */
+.sub-pill-bar {
+  display: flex; gap: var(--s-1);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0; overflow-x: auto;
+  scrollbar-width: none; background: var(--c-bg);
+}
+.sub-pill-bar::-webkit-scrollbar { display: none; }
+.sub-pill {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: var(--t-sm);
+  font-weight: 500;
+  color: var(--c-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s, color .12s;
+}
+.sub-pill:hover { background: var(--c-raised); color: var(--c-text); }
+.sub-pill.active { background: var(--c-accent-s); color: var(--c-accent); font-weight: 600; }
+
+/* Sub-panels */
+.sub-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
 .sub-panel.active { display: flex; }
 
-/* ── Toolbar ── */
-.toolbar     { display: flex; align-items: center; gap: 8px; padding: 14px 20px; flex-shrink: 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-.toolbar input[type=text], .toolbar input[type=search] {
-  background: var(--search); color: var(--text); border: 1px solid var(--border);
-  border-radius: 6px; padding: 8px 12px; font-size: 13px; outline: none;
-  transition: border-color .15s; font-family: inherit; width: 240px;
+/* ── Toolbar ─────────────────────────────────────────────────────── */
+.toolbar {
+  display: flex; align-items: center; gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0; flex-wrap: wrap;
+  background: var(--c-bg);
 }
-.toolbar input:focus { border-color: var(--accent); }
-.toolbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.search-input {
+  background: var(--c-raised);
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: var(--t-md);
+  font-family: var(--f);
+  outline: none;
+  transition: border-color .15s;
+  flex: 1; min-width: 0;
+}
+.search-input:focus { border-color: var(--c-accent); }
+.search-input::placeholder { color: var(--c-dim); }
+.match-lbl { font-size: var(--t-xs); color: var(--c-accent); white-space: nowrap; }
+.toolbar-right { display: flex; gap: var(--s-2); align-items: center; flex-shrink: 0; }
 
-/* ── Buttons ── */
-.btn { padding: 8px 18px; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s; font-family: inherit; }
-.btn-accent  { background: var(--accent); color: var(--selfg); }
-.btn-accent:hover { background: #e6bf00; }
-.btn-dark    { background: var(--sidebar); color: var(--text); }
-.btn-dark:hover { background: #333; }
-.btn-danger  { background: #5a1a1a; color: #ff6b6b; }
-.btn-danger:hover { background: #6a2020; }
-.btn-sm      { padding: 6px 12px; font-size: 11px; }
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: var(--s-1);
+  padding: 8px 16px;
+  border: none; border-radius: 8px;
+  font-size: var(--t-sm); font-weight: 600;
+  font-family: var(--f);
+  cursor: pointer;
+  transition: background .12s, opacity .12s;
+  white-space: nowrap;
+  min-height: 36px;
+}
+.btn:active { opacity: .85; }
+.btn-accent  { background: var(--c-accent); color: var(--c-selfg); }
+.btn-accent:hover { background: var(--c-accent-d); }
+.btn-ghost   { background: var(--c-raised); color: var(--c-text); }
+.btn-ghost:hover { background: #303030; }
+.btn-danger  { background: rgba(180,40,40,.25); color: #f87171; }
+.btn-danger:hover { background: rgba(180,40,40,.4); }
 
-/* ── Policy / Script text ── */
+/* ── Policy viewer ───────────────────────────────────────────────── */
+.pol-search-row {
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0;
+}
+#pol-search { flex: 1; }
 .text-viewer {
-  flex: 1; overflow-y: auto; background: var(--textbox);
-  padding: 20px 24px; font-size: 13px; line-height: 1.7;
-  white-space: pre-wrap; word-break: break-word;
+  flex: 1; overflow-y: auto;
+  padding: var(--s-5) var(--s-6);
+  font-size: var(--t-md);
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--c-bg);
 }
-mark { background: var(--accent); color: var(--selfg); border-radius: 2px; padding: 0 1px; }
+mark { background: var(--c-accent); color: var(--c-selfg); border-radius: 2px; padding: 0 2px; }
 
-/* ── Search match count ── */
-.match-count { font-size: 11px; color: var(--accent); min-width: 80px; }
-
-/* ── Two-column scripts ── */
-#scripts-main    { display: flex; flex: 1; overflow: hidden; }
-#scripts-list    { width: 250px; flex-shrink: 0; background: var(--sidebar); border-right: 1px solid var(--border); overflow-y: auto; }
-#scripts-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.script-item { padding: 10px 14px; cursor: pointer; font-size: 13px; border-radius: 6px; margin: 2px 8px; transition: background .15s; }
-.script-item:hover { background: #2e2e2e; }
-.script-item.active { background: #2d2b00; color: var(--accent); font-weight: 700; }
-#scripts-list-inner { padding: 8px 0; }
-
-/* ── Script title ── */
-#script-title-wrap  { padding: 14px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-#script-title-lbl   { font-size: 15px; font-weight: 700; color: var(--accent); }
-#script-title-input {
-  font-size: 15px; font-weight: 700; color: var(--accent);
-  background: var(--search); border: 1px solid var(--border);
-  border-radius: 6px; padding: 6px 10px; width: 100%;
-  outline: none; font-family: inherit; display: none;
+/* ── Ask AI ──────────────────────────────────────────────────────── */
+#ask-body    { display: flex; flex: 1; flex-direction: column; overflow: hidden; }
+#ask-empty   { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--s-6) var(--s-5); text-align: center; gap: var(--s-4); }
+#ask-empty h2 { font-size: var(--t-xl); font-weight: 700; color: var(--c-text); letter-spacing: -.4px; line-height: 1.3; max-width: 420px; }
+#ask-empty .sub { font-size: var(--t-md); color: var(--c-muted); }
+#sugg-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-3);
+  width: 100%; max-width: 680px;
 }
-#script-title-input:focus { border-color: var(--accent); }
-#script-body-wrap   { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 0 24px 16px; }
-#script-body        { flex: 1; overflow-y: auto; background: var(--textbox); font-size: 14px; line-height: 1.7; padding: 16px 18px; white-space: pre-wrap; word-break: break-word; border-radius: 4px; margin-top: 12px; resize: none; color: var(--text); font-family: inherit; border: none; outline: none; cursor: default; }
-#script-body.editable { cursor: text; border: 1px solid var(--border); }
-#script-body.editable:focus { border-color: var(--accent); }
-
-/* ── Ask AI ── */
-#ask-middle { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-#ask-empty  { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; }
-#ask-empty h2 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-#ask-empty .subtitle { font-size: 13px; color: var(--dim); margin-bottom: 32px; }
-#sugg-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 700px; width: 100%; }
-.sugg-card  { background: var(--sidebar); border-radius: 8px; padding: 14px 16px; cursor: pointer; text-align: left; font-size: 12px; color: var(--text); transition: background .15s; border: 1px solid var(--border); line-height: 1.5; }
-.sugg-card:hover { background: #2e2e2e; }
-#chat-area  { flex: 1; overflow-y: auto; padding: 16px 24px; display: none; flex-direction: column; gap: 10px; }
-#chat-area.visible { display: flex; }
-.msg-row    { display: flex; }
+.sugg-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  padding: var(--s-4);
+  cursor: pointer;
+  font-size: var(--t-sm);
+  color: var(--c-muted);
+  line-height: 1.55;
+  transition: background .12s, border-color .12s, color .12s;
+  text-align: left;
+}
+.sugg-card:hover { background: var(--c-raised); border-color: var(--c-accent); color: var(--c-text); }
+#chat-msgs { flex: 1; overflow-y: auto; padding: var(--s-4) var(--s-5); display: flex; flex-direction: column; gap: var(--s-3); }
+.msg-row { display: flex; }
 .msg-row.user { justify-content: flex-end; }
-.msg-row.assistant, .msg-row.system { justify-content: flex-start; }
-.bubble     { max-width: 75%; padding: 10px 14px; border-radius: 10px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
-.bubble.user      { background: var(--userbg); color: var(--accent); }
-.bubble.assistant { background: var(--aibg); color: var(--text); border: 1px solid var(--border); }
-.bubble.system    { background: #3a2020; color: #ff6b6b; }
-#ask-input-area { padding: 16px 60px; flex-shrink: 0; background: var(--body); border-top: 1px solid var(--border); }
-#ask-input-wrap { display: flex; gap: 10px; background: var(--search); border: 1px solid var(--border); border-radius: 8px; padding: 6px 6px 6px 12px; align-items: flex-end; }
-#ask-input      { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; font-family: inherit; resize: none; min-height: 38px; max-height: 120px; line-height: 1.5; padding-top: 6px; }
-
-/* ── Settings ── */
-#settings-inner { flex: 1; overflow-y: auto; display: flex; align-items: flex-start; justify-content: center; padding: 40px 20px; }
-.settings-card  { background: var(--sidebar); border-radius: 10px; padding: 36px 40px; width: 100%; max-width: 560px; }
-.settings-card h2 { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
-.settings-card p  { font-size: 11px; color: var(--dim); margin-bottom: 14px; line-height: 1.5; }
-.settings-divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
-.settings-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
-.settings-card input[type=text], .settings-card input[type=password] {
-  flex: 1; background: var(--search); color: var(--text); border: 1px solid var(--border);
-  border-radius: 6px; padding: 9px 12px; font-size: 13px; outline: none;
-  transition: border-color .15s; font-family: inherit;
+.bubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: var(--t-md);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-weight: 400;
 }
-.settings-card input:focus { border-color: var(--accent); }
+.bubble.user      { background: var(--c-userbg); color: var(--c-accent); border-radius: 14px 14px 4px 14px; }
+.bubble.assistant { background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-border); border-radius: 14px 14px 14px 4px; }
+.bubble.system    { background: rgba(180,40,40,.2); color: #fca5a5; border-radius: var(--radius); }
+#ask-input-wrap {
+  padding: var(--s-4) var(--s-5);
+  border-top: 1px solid var(--c-border);
+  background: var(--c-bg);
+  flex-shrink: 0;
+}
+#ask-input-inner {
+  display: flex; align-items: flex-end; gap: var(--s-2);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4);
+  transition: border-color .15s;
+}
+#ask-input-inner:focus-within { border-color: var(--c-accent); }
+#ask-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--c-text); font-size: var(--t-md); font-family: var(--f);
+  resize: none; min-height: 40px; max-height: 140px;
+  line-height: 1.55; padding: 6px 0;
+}
+#ask-input::placeholder { color: var(--c-dim); }
+#ask-send-btn { flex-shrink: 0; align-self: flex-end; }
+
+/* ── Scripts ─────────────────────────────────────────────────────── */
+#scripts-main  { display: flex; flex: 1; overflow: hidden; }
+#scripts-list  { width: 260px; flex-shrink: 0; background: var(--c-surface); border-right: 1px solid var(--c-border); overflow-y: auto; }
+#scripts-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+#scr-list-inner { padding: var(--s-2); }
+.script-item {
+  padding: 10px var(--s-4);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: var(--t-md);
+  font-weight: 500;
+  color: var(--c-muted);
+  transition: background .12s, color .12s;
+  margin-bottom: 2px;
+  line-height: 1.4;
+}
+.script-item:hover { background: var(--c-raised); color: var(--c-text); }
+.script-item.active { background: var(--c-accent-s); color: var(--c-accent); font-weight: 600; }
+#script-title-wrap {
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0;
+}
+#script-title-lbl   { font-size: var(--t-xl); font-weight: 700; color: var(--c-text); letter-spacing: -.3px; }
+#script-title-input {
+  font-size: var(--t-xl); font-weight: 700; color: var(--c-accent);
+  background: var(--c-raised); border: 1px solid var(--c-border);
+  border-radius: 8px; padding: 6px 10px; width: 100%;
+  outline: none; font-family: var(--f); display: none; letter-spacing: -.3px;
+}
+#script-title-input:focus { border-color: var(--c-accent); }
+#script-body-wrap { flex: 1; overflow: hidden; padding: var(--s-4) var(--s-5); display: flex; flex-direction: column; }
+#script-body {
+  flex: 1; width: 100%;
+  background: var(--c-surface);
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  padding: var(--s-4) var(--s-4);
+  font-size: var(--t-md);
+  font-family: var(--f);
+  line-height: 1.75;
+  resize: none; outline: none;
+  cursor: default;
+  transition: border-color .15s;
+}
+#script-body.editable { cursor: text; }
+#script-body.editable:focus { border-color: var(--c-accent); }
+
+/* Mobile: back button for scripts */
+#scr-back { display: none; }
+
+/* ── Settings ────────────────────────────────────────────────────── */
+#settings-body { flex: 1; overflow-y: auto; padding: var(--s-6) var(--s-5); }
+.settings-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  padding: var(--s-6);
+  max-width: 560px;
+  margin: 0 auto;
+}
+.settings-card + .settings-card { margin-top: var(--s-4); }
+.settings-card h2 { font-size: var(--t-lg); font-weight: 700; color: var(--c-text); margin-bottom: var(--s-1); }
+.settings-card p  { font-size: var(--t-sm); color: var(--c-muted); margin-bottom: var(--s-4); line-height: 1.6; }
+.settings-row { display: flex; gap: var(--s-2); align-items: center; margin-bottom: var(--s-3); }
+.settings-card input[type=text],
+.settings-card input[type=password] {
+  flex: 1; background: var(--c-raised); color: var(--c-text);
+  border: 1px solid var(--c-border); border-radius: 8px;
+  padding: 10px var(--s-3); font-size: var(--t-md); outline: none;
+  font-family: var(--f); transition: border-color .15s;
+  letter-spacing: .05em;
+}
+.settings-card input:focus { border-color: var(--c-accent); }
 .settings-card textarea {
-  width: 100%; background: var(--search); color: var(--text); border: 1px solid var(--border);
-  border-radius: 6px; padding: 10px 12px; font-size: 12px; outline: none;
-  transition: border-color .15s; font-family: inherit; resize: vertical; min-height: 120px;
-  line-height: 1.6;
+  width: 100%; background: var(--c-raised); color: var(--c-text);
+  border: 1px solid var(--c-border); border-radius: 8px;
+  padding: 10px var(--s-3); font-size: var(--t-md); outline: none;
+  font-family: var(--f); resize: vertical; min-height: 130px;
+  line-height: 1.7; transition: border-color .15s; margin-bottom: var(--s-4);
 }
-.settings-card textarea:focus { border-color: var(--accent); }
-.settings-card label { font-size: 11px; color: var(--dim); cursor: pointer; user-select: none; display: flex; align-items: center; gap: 5px; }
-.settings-card label input[type=checkbox] { accent-color: var(--accent); }
-.saved-msg { font-size: 11px; color: #66bb6a; margin-top: 8px; min-height: 16px; }
+.settings-card textarea::placeholder { color: var(--c-dim); }
+.settings-card textarea:focus { border-color: var(--c-accent); }
+.toggle-label {
+  display: flex; align-items: center; gap: var(--s-2);
+  font-size: var(--t-sm); color: var(--c-muted); cursor: pointer;
+  white-space: nowrap;
+}
+.toggle-label input[type=checkbox] { accent-color: var(--c-accent); width: 14px; height: 14px; }
+.saved-msg { font-size: var(--t-sm); color: #4ade80; margin-top: var(--s-3); min-height: 20px; }
 
-/* ── Scrollbars ── */
-::-webkit-scrollbar { width: 6px; }
+/* ── Scrollbars ──────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-/* ── Misc ── */
+/* ── Utils ───────────────────────────────────────────────────────── */
 .hidden { display: none !important; }
+.divider { border: none; border-top: 1px solid var(--c-border); margin: var(--s-5) 0; }
+
+/* ── Mobile (<768px) ─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  #nav { display: none; }
+  #bot-nav { display: block; }
+  #content { padding-bottom: var(--nav-bot); }
+
+  /* Scripts mobile: list view vs content view */
+  #scripts-list  { width: 100%; border-right: none; }
+  #scripts-right { position: absolute; inset: 0; bottom: var(--nav-bot); background: var(--c-bg); z-index: 10; transform: translateX(100%); transition: transform .25s ease; display: flex; flex-direction: column; }
+  #scripts-main.show-content #scripts-right { transform: translateX(0); }
+  #scripts-main.show-content #scripts-list  { display: none; }
+  #scr-back { display: flex; }
+
+  #sugg-cards { grid-template-columns: 1fr; max-width: 100%; }
+
+  .bubble { max-width: 90%; }
+
+  #ask-input-wrap { padding: var(--s-3) var(--s-4); }
+
+  .toolbar { gap: var(--s-2); }
+  .toolbar .toolbar-right { width: 100%; justify-content: flex-end; }
+  .search-input { width: 100%; }
+
+  .settings-card { padding: var(--s-5); }
+}
+
+/* ── Tablet (768-1024) ───────────────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1024px) {
+  :root { --nav-w: 180px; }
+  .nav-item { font-size: var(--t-sm); }
+  #sugg-cards { grid-template-columns: repeat(3,1fr); }
+}
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- Header -->
-  <div id="header"><h1>Bumble Reference Tool</h1></div>
+  <!-- Top bar -->
+  <div id="topbar">
+    <h1>🐝 Bumble Reference Tool</h1>
+  </div>
 
   <div id="body">
 
-    <!-- Left Nav -->
+    <!-- Desktop sidebar nav -->
     <nav id="nav">
-      <div class="nav-item active" data-section="policies">Privacy Policies</div>
-      <div class="nav-item"        data-section="scripts">Scripts</div>
-      <div class="nav-item"        data-section="settings">API Settings</div>
+      <div class="nav-item active" data-section="policies">
+        <span class="nav-icon">📋</span> Privacy Policies
+      </div>
+      <div class="nav-item" data-section="scripts">
+        <span class="nav-icon">📝</span> Scripts
+      </div>
+      <div class="nav-item" data-section="settings">
+        <span class="nav-icon">⚙️</span> API Settings
+      </div>
     </nav>
 
     <!-- Content -->
     <div id="content">
 
-      <!-- ═══════════════════════════════ PRIVACY POLICIES ══════════════════ -->
+      <!-- ═══════════════════ PRIVACY POLICIES ═════════════════════ -->
       <div class="panel active" id="panel-policies">
 
         <!-- Top tabs: Policies | Ask AI -->
-        <div class="tab-bar" id="pol-tab-bar">
-          <div class="tab-btn active" data-tab="pol-policies">Policies</div>
-          <div class="tab-btn"        data-tab="pol-ask">Ask AI</div>
+        <div class="pill-bar" id="pol-tab-bar">
+          <div class="pill active" data-tab="pol-policies">Policies</div>
+          <div class="pill"        data-tab="pol-ask">Ask AI</div>
         </div>
 
-        <!-- ── Policies sub-panel ── -->
+        <!-- Policies sub-panel -->
         <div class="sub-panel active" id="pol-policies">
-          <!-- Policy selector: Bumble | Badoo | BFF -->
-          <div class="sub-tab-bar" id="pol-selector"></div>
-          <!-- Search toolbar -->
-          <div class="toolbar">
-            <input type="search" id="pol-search" placeholder="Search policy…">
-            <span class="match-count" id="pol-match"></span>
+          <div class="sub-pill-bar" id="pol-selector"></div>
+          <div class="pol-search-row">
+            <input class="search-input" id="pol-search" type="search" placeholder="Search in policy…">
+            <span class="match-lbl" id="pol-match"></span>
           </div>
           <div class="text-viewer" id="pol-text"></div>
         </div>
 
-        <!-- ── Ask AI sub-panel ── -->
+        <!-- Ask AI sub-panel -->
         <div class="sub-panel" id="pol-ask">
-          <!-- Policy selector inside Ask AI -->
-          <div class="sub-tab-bar" id="ask-pol-selector"></div>
-
-          <div id="ask-middle">
-            <!-- Empty state -->
+          <div class="sub-pill-bar" id="ask-pol-selector"></div>
+          <div id="ask-body">
             <div id="ask-empty">
               <h2 id="ask-title"></h2>
-              <p class="subtitle">Based on the selected privacy policy</p>
+              <p class="sub">Based on the selected privacy policy</p>
               <div id="sugg-cards"></div>
             </div>
-            <!-- Chat -->
-            <div id="chat-area"></div>
+            <div id="chat-msgs" style="display:none"></div>
           </div>
-
-          <!-- Input bar -->
-          <div id="ask-input-area">
-            <div id="ask-input-wrap">
-              <textarea id="ask-input" rows="1" placeholder="Ask a question…"></textarea>
+          <div id="ask-input-wrap">
+            <div id="ask-input-inner">
+              <textarea id="ask-input" rows="1" placeholder="Ask a question about this policy…"></textarea>
               <button class="btn btn-accent" id="ask-send-btn">Ask</button>
             </div>
           </div>
@@ -229,27 +496,33 @@ mark { background: var(--accent); color: var(--selfg); border-radius: 2px; paddi
 
       </div><!-- /panel-policies -->
 
-      <!-- ═══════════════════════════════════ SCRIPTS ═══════════════════════ -->
+      <!-- ═══════════════════════ SCRIPTS ══════════════════════════ -->
       <div class="panel" id="panel-scripts">
-        <!-- Toolbar -->
         <div class="toolbar">
-          <input type="search" id="scr-search" placeholder="Search scripts…">
+          <input class="search-input" id="scr-search" type="search" placeholder="Search scripts…">
           <div class="toolbar-right" id="scr-normal-bar">
-            <button class="btn btn-dark"   id="scr-new-btn">+ New</button>
+            <button class="btn btn-ghost"  id="scr-new-btn">+ New</button>
             <button class="btn btn-danger" id="scr-del-btn">Delete</button>
-            <button class="btn btn-dark"   id="scr-edit-btn">Edit</button>
-            <button class="btn btn-accent" id="scr-copy-btn">Copy to Clipboard</button>
+            <button class="btn btn-ghost"  id="scr-edit-btn">Edit</button>
+            <button class="btn btn-accent" id="scr-copy-btn">Copy</button>
           </div>
           <div class="toolbar-right hidden" id="scr-edit-bar">
-            <button class="btn btn-dark"   id="scr-cancel-btn">Cancel</button>
+            <button class="btn btn-ghost"  id="scr-cancel-btn">Cancel</button>
             <button class="btn btn-accent" id="scr-save-btn">Save</button>
           </div>
         </div>
 
-        <!-- Two-column -->
         <div id="scripts-main">
-          <div id="scripts-list"><div id="scripts-list-inner"></div></div>
-          <div id="scripts-content">
+          <div id="scripts-list"><div id="scr-list-inner"></div></div>
+          <div id="scripts-right">
+            <!-- Mobile back button -->
+            <div class="toolbar" id="scr-back" style="border-bottom:1px solid var(--c-border)">
+              <button class="btn btn-ghost" onclick="closeScrContent()">← Back</button>
+              <div class="toolbar-right" id="scr-edit-bar-mob">
+                <button class="btn btn-ghost"  onclick="cancelEdit()">Cancel</button>
+                <button class="btn btn-accent" onclick="saveScript()">Save</button>
+              </div>
+            </div>
             <div id="script-title-wrap">
               <div id="script-title-lbl"></div>
               <input type="text" id="script-title-input" placeholder="Script title…">
@@ -261,27 +534,29 @@ mark { background: var(--accent); color: var(--selfg); border-radius: 2px; paddi
         </div>
       </div><!-- /panel-scripts -->
 
-      <!-- ══════════════════════════════ API SETTINGS ═══════════════════════ -->
+      <!-- ══════════════════ API SETTINGS ══════════════════════════ -->
       <div class="panel" id="panel-settings">
-        <div class="tab-bar"><div class="tab-btn active" style="pointer-events:none">API Settings</div></div>
-        <div id="settings-inner">
+        <div class="pill-bar" style="pointer-events:none">
+          <div class="pill active">API Settings</div>
+        </div>
+        <div id="settings-body">
+          <!-- API Key card -->
           <div class="settings-card">
             <h2>Anthropic API Key</h2>
-            <p>Used by the Ask AI tab to answer questions about privacy policies.</p>
+            <p>Used by Ask AI to answer questions about privacy policies. Your key is stored only in this browser.</p>
             <div class="settings-row">
               <input type="password" id="cfg-api-key" placeholder="sk-ant-…">
-              <label><input type="checkbox" id="cfg-show-key"> Show</label>
+              <label class="toggle-label">
+                <input type="checkbox" id="cfg-show-key"> Show
+              </label>
             </div>
+          </div>
 
-            <hr class="settings-divider">
-
+          <!-- Rules card -->
+          <div class="settings-card">
             <h2>Response Rules</h2>
-            <p>Custom instructions added to every AI response. One rule per line.<br>
-            Examples: "Always respond in English" · "Cite the policy section" · "Keep answers under 3 sentences"</p>
-            <textarea id="cfg-rules" placeholder="Write your rules here…"></textarea>
-
-            <hr class="settings-divider">
-
+            <p>Custom instructions added to every AI response. One rule per line.</p>
+            <textarea id="cfg-rules" placeholder="e.g. Always respond in English&#10;Cite the relevant policy section&#10;Keep answers under 3 sentences"></textarea>
             <button class="btn btn-accent" id="cfg-save-btn">Save Settings</button>
             <div class="saved-msg" id="cfg-saved"></div>
           </div>
@@ -292,27 +567,33 @@ mark { background: var(--accent); color: var(--selfg); border-radius: 2px; paddi
   </div><!-- /body -->
 </div><!-- /app -->
 
+<!-- Mobile bottom nav -->
+<div id="bot-nav">
+  <div class="bot-nav-inner">
+    <div class="bot-item active" data-section="policies">
+      <span class="bot-icon">📋</span><span>Policies</span>
+    </div>
+    <div class="bot-item" data-section="scripts">
+      <span class="bot-icon">📝</span><span>Scripts</span>
+    </div>
+    <div class="bot-item" data-section="settings">
+      <span class="bot-icon">⚙️</span><span>Settings</span>
+    </div>
+  </div>
+</div>
+
 <script>
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // STATE
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 const S = {
-  polIdx:    0,
-  askPolIdx: 0,
-  scripts:   [],
-  filtered:  [],
-  selIdx:    -1,
-  editMode:  false,
-  chat:      [],
-  asking:    false,
+  polIdx: 0, askPolIdx: 0,
+  scripts: [], filtered: [], selIdx: -1,
+  editMode: false, chat: [], asking: false,
 };
+let POLICIES = {}, POL_NAMES = [], POL_QUESTIONS = {};
 
-let POLICIES  = {};
-let POL_NAMES = [];
-
-const POL_QUESTIONS = {};  // filled after data loads
-
-const DEFAULT_QUESTIONS = [
+const DEFAULT_Q = [
   "What data is collected from users?",
   "How is personal data protected?",
   "What are users' privacy rights?",
@@ -321,25 +602,23 @@ const DEFAULT_QUESTIONS = [
   "How long is data retained?",
 ];
 
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // INIT
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 async function init() {
   const data = await fetch('bumble_tool_data.json').then(r => r.json());
   POLICIES  = data.policies;
   POL_NAMES = Object.keys(POLICIES);
 
-  // Scripts: use localStorage if available, else seed from JSON
   const stored = localStorage.getItem('bumble_scripts');
-  S.scripts = stored ? JSON.parse(stored) : data.templates;
+  S.scripts  = stored ? JSON.parse(stored) : data.templates;
   S.filtered = [...S.scripts];
 
-  // Suggested questions (defined after POL_NAMES known)
   POL_QUESTIONS[POL_NAMES[0]] = [
-    "What personal data does Bumble collect from users?",
+    "What personal data does Bumble collect?",
     "How long does Bumble retain user data?",
-    "Can users request deletion of their personal data?",
-    "Does Bumble share data with third-party companies?",
+    "Can users request deletion of their data?",
+    "Does Bumble share data with third parties?",
     "How does Bumble handle location data?",
     "What rights do users have under GDPR?",
     "How does Bumble use data for advertising?",
@@ -347,302 +626,245 @@ async function init() {
   ];
   POL_QUESTIONS[POL_NAMES[1]] = [
     "What data does Badoo collect from users?",
-    "How is user data used for advertising on Badoo?",
+    "How is user data used for advertising?",
     "Can users opt out of data processing?",
     "How do I permanently delete my Badoo account?",
-    "What cookies and tracking technologies does Badoo use?",
+    "What cookies does Badoo use?",
     "Where is Badoo user data stored?",
     "How does Badoo handle data from minors?",
     "What third parties receive Badoo user data?",
   ];
   POL_QUESTIONS[POL_NAMES[2]] = [
-    "How does BFF mode handle data differently from Bumble?",
-    "Is BFF data shared with the main Bumble dating app?",
+    "How does BFF mode handle data differently?",
+    "Is BFF data shared with the Bumble dating app?",
     "What safety features protect BFF users?",
     "What data is visible to other BFF users?",
-    "How does BFF verify user identity?",
     "Can I use Bumble BFF without sharing personal data?",
-    "How do I report a privacy concern in BFF mode?",
+    "How do I report a BFF privacy concern?",
     "What data is collected when swiping in BFF mode?",
+    "How does BFF verify user identity?",
   ];
 
   loadSettings();
   buildPolSelector();
   buildAskPolSelector();
   selectPolicy(0);
-  populateScripts();
+  renderScriptList();
   if (S.scripts.length) selectScript(0);
   bindEvents();
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════════════════════════════
+function showSection(s) {
+  if (S.editMode) cancelEdit();
+  document.querySelectorAll('.nav-item, .bot-item').forEach(el =>
+    el.classList.toggle('active', el.dataset.section === s));
+  document.querySelectorAll('.panel').forEach(el =>
+    el.classList.toggle('active', el.id === `panel-${s}`));
+}
+
+// ══════════════════════════════════════════════════════════════════
 // SETTINGS
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 function loadSettings() {
   const s = JSON.parse(localStorage.getItem('bumble_settings') || '{}');
   document.getElementById('cfg-api-key').value = s.apiKey || '';
   document.getElementById('cfg-rules').value   = s.rules  || '';
 }
-
 function saveSettings() {
-  const s = {
+  localStorage.setItem('bumble_settings', JSON.stringify({
     apiKey: document.getElementById('cfg-api-key').value.trim(),
     rules:  document.getElementById('cfg-rules').value.trim(),
-  };
-  localStorage.setItem('bumble_settings', JSON.stringify(s));
-  const msg = document.getElementById('cfg-saved');
-  msg.textContent = 'Saved successfully.';
-  setTimeout(() => msg.textContent = '', 3000);
+  }));
+  const m = document.getElementById('cfg-saved');
+  m.textContent = 'Saved ✓';
+  setTimeout(() => m.textContent = '', 3000);
 }
+const getSettings = () => JSON.parse(localStorage.getItem('bumble_settings') || '{}');
 
-function getSettings() {
-  return JSON.parse(localStorage.getItem('bumble_settings') || '{}');
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════════════════════════
-function showSection(section) {
-  if (S.editMode) cancelEdit();
-  document.querySelectorAll('.nav-item').forEach(el =>
-    el.classList.toggle('active', el.dataset.section === section));
-  document.querySelectorAll('.panel').forEach(el =>
-    el.classList.toggle('active', el.id === `panel-${section}`));
-}
-
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // POLICIES
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 function buildPolSelector() {
   const bar = document.getElementById('pol-selector');
   bar.innerHTML = '';
-  POL_NAMES.forEach((name, i) => {
-    const label = name.includes('BFF') ? 'BFF' : name.split(' ')[0];
-    const btn = document.createElement('div');
-    btn.className = 'sub-tab-btn' + (i === 0 ? ' active' : '');
-    btn.textContent = label;
-    btn.title = name;
-    btn.onclick = () => selectPolicy(i);
-    bar.appendChild(btn);
+  POL_NAMES.forEach((n, i) => {
+    const label = n.includes('BFF') ? 'BFF' : n.split(' ')[0];
+    const el = Object.assign(document.createElement('div'), {
+      className: 'sub-pill' + (i === 0 ? ' active' : ''),
+      textContent: label, title: n
+    });
+    el.onclick = () => selectPolicy(i);
+    bar.appendChild(el);
   });
 }
 
 function selectPolicy(idx) {
   S.polIdx = idx;
-  document.querySelectorAll('#pol-selector .sub-tab-btn').forEach((b, i) =>
+  document.querySelectorAll('#pol-selector .sub-pill').forEach((b, i) =>
     b.classList.toggle('active', i === idx));
-  const text = POLICIES[POL_NAMES[idx]];
-  const viewer = document.getElementById('pol-text');
-  viewer.textContent = text;
+  document.getElementById('pol-text').textContent = POLICIES[POL_NAMES[idx]];
   document.getElementById('pol-search').value = '';
   document.getElementById('pol-match').textContent = '';
 }
 
 function polSearch(q) {
-  const viewer = document.getElementById('pol-text');
+  const el = document.getElementById('pol-text');
   const raw = POLICIES[POL_NAMES[S.polIdx]];
-  if (!q) {
-    viewer.textContent = raw;
-    document.getElementById('pol-match').textContent = '';
-    return;
-  }
-  const lq = q.toLowerCase();
-  const parts = raw.split(new RegExp(`(${escapeRe(q)})`, 'gi'));
-  viewer.innerHTML = '';
-  let count = 0;
+  if (!q) { el.textContent = raw; document.getElementById('pol-match').textContent = ''; return; }
+  const parts = raw.split(new RegExp(`(${esc(q)})`, 'gi'));
+  el.innerHTML = '';
+  let n = 0;
   parts.forEach(p => {
-    if (p.toLowerCase() === lq) {
-      const m = document.createElement('mark'); m.textContent = p;
-      viewer.appendChild(m); count++;
-    } else {
-      viewer.appendChild(document.createTextNode(p));
-    }
+    if (p.toLowerCase() === q.toLowerCase()) {
+      const m = document.createElement('mark'); m.textContent = p; el.appendChild(m); n++;
+    } else el.appendChild(document.createTextNode(p));
   });
-  const n = count;
-  document.getElementById('pol-match').textContent =
-    n ? `${n} match${n !== 1 ? 'es' : ''}` : 'No matches';
-  if (n) viewer.querySelector('mark')?.scrollIntoView({ block: 'center' });
+  document.getElementById('pol-match').textContent = n ? `${n} match${n !== 1 ? 'es' : ''}` : 'No matches';
+  if (n) el.querySelector('mark').scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // ASK AI
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 function buildAskPolSelector() {
   const bar = document.getElementById('ask-pol-selector');
   bar.innerHTML = '';
-  POL_NAMES.forEach((name, i) => {
-    const label = name.includes('BFF') ? 'BFF' : name.split(' ')[0];
-    const btn = document.createElement('div');
-    btn.className = 'sub-tab-btn' + (i === 0 ? ' active' : '');
-    btn.textContent = label;
-    btn.title = name;
-    btn.onclick = () => selectAskPolicy(i);
-    bar.appendChild(btn);
+  POL_NAMES.forEach((n, i) => {
+    const label = n.includes('BFF') ? 'BFF' : n.split(' ')[0];
+    const el = Object.assign(document.createElement('div'), {
+      className: 'sub-pill' + (i === 0 ? ' active' : ''),
+      textContent: label, title: n
+    });
+    el.onclick = () => selectAskPolicy(i);
+    bar.appendChild(el);
   });
   buildSuggestions();
 }
 
 function selectAskPolicy(idx) {
-  const prev = S.askPolIdx;
-  S.askPolIdx = idx;
-  document.querySelectorAll('#ask-pol-selector .sub-tab-btn').forEach((b, i) =>
+  const prev = S.askPolIdx; S.askPolIdx = idx;
+  document.querySelectorAll('#ask-pol-selector .sub-pill').forEach((b, i) =>
     b.classList.toggle('active', i === idx));
-  if (idx !== prev) {
-    S.chat = [];
-    S.asking = false;
-    resetChatUI();
-  }
-  buildSuggestions();
+  if (idx !== prev) { S.chat = []; S.asking = false; resetChatUI(); }
+  else buildSuggestions();
 }
 
 function buildSuggestions() {
   const name = POL_NAMES[S.askPolIdx];
   document.getElementById('ask-title').textContent = name;
-  const pool = POL_QUESTIONS[name] || DEFAULT_QUESTIONS;
-  const chosen = shuffle(pool).slice(0, 3);
-  const container = document.getElementById('sugg-cards');
-  container.innerHTML = '';
+  const pool = POL_QUESTIONS[name] || DEFAULT_Q;
+  const chosen = shuffle([...pool]).slice(0, 3);
+  const c = document.getElementById('sugg-cards');
+  c.innerHTML = '';
   chosen.forEach(q => {
-    const card = document.createElement('div');
-    card.className = 'sugg-card';
-    card.textContent = q;
-    card.onclick = () => askWith(q);
-    container.appendChild(card);
+    const el = Object.assign(document.createElement('div'), { className: 'sugg-card', textContent: q });
+    el.onclick = () => askWith(q);
+    c.appendChild(el);
   });
 }
 
 function resetChatUI() {
   document.getElementById('ask-empty').style.display = '';
-  const area = document.getElementById('chat-area');
-  area.classList.remove('visible');
-  area.innerHTML = '';
+  const msgs = document.getElementById('chat-msgs');
+  msgs.style.display = 'none'; msgs.innerHTML = '';
   buildSuggestions();
 }
 
 function askWith(q) {
   document.getElementById('ask-input').value = q;
+  autoResize(document.getElementById('ask-input'));
   sendQuestion();
 }
 
 async function sendQuestion() {
   if (S.asking) return;
-  const input = document.getElementById('ask-input');
-  const question = input.value.trim();
-  if (!question) return;
+  const inp = document.getElementById('ask-input');
+  const q   = inp.value.trim();
+  if (!q) return;
+  const { apiKey, rules } = getSettings();
+  if (!apiKey) { addMsg('system', 'Set your Anthropic API key in API Settings first.'); return; }
 
-  const settings = getSettings();
-  if (!settings.apiKey) {
-    addMessage('system', 'Please set your Anthropic API key in API Settings.');
-    return;
-  }
-
-  input.value = '';
-  addMessage('user', question);
-  addMessage('assistant', 'Thinking…');
+  inp.value = ''; autoResize(inp);
+  addMsg('user', q);
+  addMsg('assistant', 'Thinking…');
   S.asking = true;
   const btn = document.getElementById('ask-send-btn');
   btn.textContent = '…'; btn.disabled = true;
 
   const polName = POL_NAMES[S.askPolIdx];
-  const polText = POLICIES[polName];
-  const rules   = settings.rules || '';
   const history = S.chat.slice(0, -1)
     .filter(m => m.role !== 'system' && m.content !== 'Thinking…')
-    .map(m => ({ role: m.role, content: m.content }));
+    .map(({ role, content }) => ({ role, content }));
 
   const system = [
     "You are a privacy policy expert helping a Bumble support agent.",
-    "Answer questions based ONLY on the following policy document.\n",
-    `Policy: ${polName}\n\n${polText}`,
-    rules ? `\n\nAdditional rules you must follow:\n${rules}` : ''
+    "Answer questions based ONLY on the following policy document.",
+    "", `Policy: ${polName}`, "", POLICIES[polName],
+    rules ? `\n\nAdditional rules:\n${rules}` : ''
   ].join('\n');
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res  = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': settings.apiKey,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        system,
-        messages: [...history, { role: 'user', content: question }],
+        max_tokens: 1024, system,
+        messages: [...history, { role: 'user', content: q }],
       }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || res.statusText);
-    replaceLastMessage(data.content[0].text);
-  } catch (err) {
-    replaceLastMessage(`Error: ${err.message}`);
+    replaceLastMsg(data.content[0].text);
+  } catch (e) {
+    replaceLastMsg(`Error: ${e.message}`);
   } finally {
-    S.asking = false;
-    btn.textContent = 'Ask'; btn.disabled = false;
+    S.asking = false; btn.textContent = 'Ask'; btn.disabled = false;
   }
 }
 
-function addMessage(role, content) {
-  S.chat.push({ role, content });
-  renderChat();
+function addMsg(role, content) {
+  S.chat.push({ role, content }); renderChat();
 }
-
-function replaceLastMessage(content) {
-  if (S.chat.length) S.chat[S.chat.length - 1].content = content;
-  renderChat();
+function replaceLastMsg(content) {
+  if (S.chat.length) S.chat[S.chat.length - 1].content = content; renderChat();
 }
-
 function renderChat() {
-  if (S.chat.length) {
-    document.getElementById('ask-empty').style.display = 'none';
-    const area = document.getElementById('chat-area');
-    area.classList.add('visible');
-    area.innerHTML = '';
-    S.chat.forEach(m => {
-      const row = document.createElement('div');
-      row.className = `msg-row ${m.role}`;
-      const bubble = document.createElement('div');
-      bubble.className = `bubble ${m.role}`;
-      bubble.textContent = m.content;
-      row.appendChild(bubble);
-      area.appendChild(row);
-    });
-    area.scrollTop = area.scrollHeight;
-  }
+  if (!S.chat.length) return;
+  document.getElementById('ask-empty').style.display = 'none';
+  const area = document.getElementById('chat-msgs');
+  area.style.display = 'flex'; area.innerHTML = '';
+  S.chat.forEach(({ role, content }) => {
+    const row    = document.createElement('div'); row.className = `msg-row ${role}`;
+    const bubble = document.createElement('div'); bubble.className = `bubble ${role}`;
+    bubble.textContent = content;
+    row.appendChild(bubble); area.appendChild(row);
+  });
+  area.scrollTop = area.scrollHeight;
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // SCRIPTS
-// ═══════════════════════════════════════════════════════════════════
-function saveScriptsToDisk() {
-  localStorage.setItem('bumble_scripts', JSON.stringify(S.scripts));
-}
-
-function populateScripts() {
-  S.filtered = [...S.scripts];
-  renderScriptList();
-}
-
-function filterScripts(q) {
-  const lq = q.toLowerCase().trim();
-  S.filtered = lq
-    ? S.scripts.filter(t => t.title.toLowerCase().includes(lq) || t.body.toLowerCase().includes(lq))
-    : [...S.scripts];
-  renderScriptList();
-  if (S.filtered.length) selectScript(0);
-}
+// ══════════════════════════════════════════════════════════════════
+function saveToDisk()  { localStorage.setItem('bumble_scripts', JSON.stringify(S.scripts)); }
 
 function renderScriptList() {
-  const container = document.getElementById('scripts-list-inner');
-  container.innerHTML = '';
+  const c = document.getElementById('scr-list-inner'); c.innerHTML = '';
   S.filtered.forEach((t, i) => {
-    const el = document.createElement('div');
-    el.className = 'script-item' + (i === S.selIdx ? ' active' : '');
-    el.textContent = t.title;
-    el.onclick = () => selectScript(i);
-    container.appendChild(el);
+    const el = Object.assign(document.createElement('div'), {
+      className: 'script-item' + (i === S.selIdx ? ' active' : ''),
+      textContent: t.title
+    });
+    el.onclick = () => { selectScript(i); openScrContent(); };
+    c.appendChild(el);
   });
 }
 
@@ -652,30 +874,32 @@ function selectScript(idx) {
   renderScriptList();
   if (idx < 0 || idx >= S.filtered.length) return;
   const t = S.filtered[idx];
-  document.getElementById('script-title-lbl').textContent   = t.title;
+  document.getElementById('script-title-lbl').textContent = t.title;
   document.getElementById('script-title-input').style.display = 'none';
   document.getElementById('script-title-lbl').style.display   = '';
-  const body = document.getElementById('script-body');
-  body.value    = t.body;
-  body.readOnly = true;
-  body.classList.remove('editable');
+  const b = document.getElementById('script-body');
+  b.value = t.body; b.readOnly = true; b.classList.remove('editable');
+}
+
+function filterScripts(q) {
+  const lq = q.toLowerCase().trim();
+  S.filtered = lq
+    ? S.scripts.filter(t => t.title.toLowerCase().includes(lq) || t.body.toLowerCase().includes(lq))
+    : [...S.scripts];
+  S.selIdx = S.filtered.length ? 0 : -1;
+  renderScriptList();
+  if (S.selIdx >= 0) selectScript(0);
 }
 
 function newScript() {
-  S.editMode = true;
-  S.selIdx = -1;
-  renderScriptList();
+  S.editMode = true; S.selIdx = -1; renderScriptList();
   document.getElementById('script-title-lbl').style.display   = 'none';
   const inp = document.getElementById('script-title-input');
-  inp.style.display = '';
-  inp.value = 'New Script';
-  inp.select();
-  const body = document.getElementById('script-body');
-  body.value = '';
-  body.readOnly = false;
-  body.classList.add('editable');
-  body.style.cursor = 'text';
+  inp.style.display = ''; inp.value = 'New Script'; inp.select();
+  const b = document.getElementById('script-body');
+  b.value = ''; b.readOnly = false; b.classList.add('editable');
   toggleEditBar(true);
+  openScrContent();
 }
 
 function enterEdit() {
@@ -684,69 +908,47 @@ function enterEdit() {
   const t = S.filtered[S.selIdx];
   document.getElementById('script-title-lbl').style.display   = 'none';
   const inp = document.getElementById('script-title-input');
-  inp.style.display = '';
-  inp.value = t.title;
-  const body = document.getElementById('script-body');
-  body.readOnly = false;
-  body.classList.add('editable');
-  body.style.cursor = 'text';
+  inp.style.display = ''; inp.value = t.title;
+  const b = document.getElementById('script-body');
+  b.readOnly = false; b.classList.add('editable');
   toggleEditBar(true);
 }
 
 function saveScript() {
   const title = document.getElementById('script-title-input').value.trim();
-  if (!title) {
-    document.getElementById('script-title-input').style.borderColor = '#cc3333';
-    return;
-  }
+  if (!title) { document.getElementById('script-title-input').style.borderColor = '#f87171'; return; }
   document.getElementById('script-title-input').style.borderColor = '';
   const body = document.getElementById('script-body').value.trimEnd();
-
   const realIdx = S.selIdx >= 0 ? S.scripts.indexOf(S.filtered[S.selIdx]) : -1;
-  if (realIdx >= 0) {
-    S.scripts[realIdx] = { title, body };
-  } else {
-    S.scripts.push({ title, body });
-  }
-  saveScriptsToDisk();
-
+  if (realIdx >= 0) { S.scripts[realIdx] = { title, body }; }
+  else { S.scripts.push({ title, body }); }
+  saveToDisk();
   S.filtered = [...S.scripts];
-  const newSelIdx = realIdx >= 0 ? S.filtered.indexOf(S.scripts[realIdx]) : S.scripts.length - 1;
-  S.editMode = false;
-  toggleEditBar(false);
-  renderScriptList();
-  selectScript(newSelIdx);
+  const newIdx = realIdx >= 0 ? S.filtered.findIndex(t => t === S.scripts[realIdx]) : S.scripts.length - 1;
+  S.editMode = false; toggleEditBar(false);
+  renderScriptList(); selectScript(newIdx >= 0 ? newIdx : 0);
 }
 
 function cancelEdit() {
-  S.editMode = false;
-  toggleEditBar(false);
-  if (S.selIdx >= 0 && S.selIdx < S.filtered.length) {
-    selectScript(S.selIdx);
-  } else if (S.scripts.length) {
-    S.filtered = [...S.scripts];
-    renderScriptList();
-    selectScript(0);
-  }
+  S.editMode = false; toggleEditBar(false);
+  if (S.selIdx >= 0 && S.selIdx < S.filtered.length) selectScript(S.selIdx);
+  else if (S.scripts.length) { S.filtered = [...S.scripts]; renderScriptList(); selectScript(0); }
 }
 
 function deleteScript() {
   if (S.selIdx < 0 || S.selIdx >= S.filtered.length) return;
   const t = S.filtered[S.selIdx];
   if (!confirm(`Delete "${t.title}"?\nThis cannot be undone.`)) return;
-  const realIdx = S.scripts.indexOf(t);
-  if (realIdx >= 0) S.scripts.splice(realIdx, 1);
-  saveScriptsToDisk();
+  const ri = S.scripts.indexOf(t);
+  if (ri >= 0) S.scripts.splice(ri, 1);
+  saveToDisk();
   S.filtered = [...S.scripts];
+  const ni = Math.min(S.selIdx, S.filtered.length - 1);
+  S.selIdx = ni;
   renderScriptList();
-  const newIdx = Math.min(S.selIdx, S.filtered.length - 1);
-  S.selIdx = newIdx;
-  if (S.filtered.length) {
-    selectScript(newIdx);
-  } else {
-    document.getElementById('script-title-lbl').textContent = '';
-    document.getElementById('script-body').value = '';
-  }
+  if (S.filtered.length) selectScript(ni);
+  else { document.getElementById('script-title-lbl').textContent = ''; document.getElementById('script-body').value = ''; }
+  closeScrContent();
 }
 
 function copyScript() {
@@ -754,50 +956,46 @@ function copyScript() {
   navigator.clipboard.writeText(S.filtered[S.selIdx].body);
 }
 
-function toggleEditBar(editing) {
-  document.getElementById('scr-normal-bar').classList.toggle('hidden', editing);
-  document.getElementById('scr-edit-bar').classList.toggle('hidden', !editing);
+function toggleEditBar(on) {
+  document.getElementById('scr-normal-bar').classList.toggle('hidden', on);
+  document.getElementById('scr-edit-bar').classList.toggle('hidden', !on);
+  // mobile back bar edit buttons
+  const mob = document.getElementById('scr-edit-bar-mob');
+  if (mob) mob.style.display = on ? 'flex' : 'none';
 }
 
-// ═══════════════════════════════════════════════════════════════════
+function openScrContent()  { document.getElementById('scripts-main').classList.add('show-content'); }
+function closeScrContent() { document.getElementById('scripts-main').classList.remove('show-content'); }
+
+// ══════════════════════════════════════════════════════════════════
 // POL TAB SWITCHING
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 function showPolTab(tab) {
-  document.querySelectorAll('#pol-tab-bar .tab-btn').forEach(b =>
+  document.querySelectorAll('#pol-tab-bar .pill').forEach(b =>
     b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('#panel-policies .sub-panel').forEach(p =>
     p.classList.toggle('active', p.id === tab));
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // EVENTS
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 function bindEvents() {
-  // Nav
-  document.querySelectorAll('.nav-item').forEach(el =>
+  document.querySelectorAll('.nav-item, .bot-item').forEach(el =>
     el.addEventListener('click', () => showSection(el.dataset.section)));
 
-  // Policies top tabs
-  document.querySelectorAll('#pol-tab-bar .tab-btn').forEach(btn =>
-    btn.addEventListener('click', () => showPolTab(btn.dataset.tab)));
+  document.querySelectorAll('#pol-tab-bar .pill').forEach(b =>
+    b.addEventListener('click', () => showPolTab(b.dataset.tab)));
 
-  // Policy search
-  document.getElementById('pol-search').addEventListener('input', e =>
-    polSearch(e.target.value.trim()));
+  document.getElementById('pol-search').addEventListener('input', e => polSearch(e.target.value.trim()));
 
-  // Ask AI send
   document.getElementById('ask-send-btn').addEventListener('click', sendQuestion);
   document.getElementById('ask-input').addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuestion(); }
   });
-  // Auto-resize textarea
-  document.getElementById('ask-input').addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-  });
+  document.getElementById('ask-input').addEventListener('input', function() { autoResize(this); });
 
-  // Scripts
-  document.getElementById('scr-search').addEventListener('input',  e => filterScripts(e.target.value));
+  document.getElementById('scr-search').addEventListener('input',   e => filterScripts(e.target.value));
   document.getElementById('scr-new-btn').addEventListener('click',  newScript);
   document.getElementById('scr-edit-btn').addEventListener('click', enterEdit);
   document.getElementById('scr-save-btn').addEventListener('click', saveScript);
@@ -805,30 +1003,28 @@ function bindEvents() {
   document.getElementById('scr-del-btn').addEventListener('click',  deleteScript);
   document.getElementById('scr-copy-btn').addEventListener('click', copyScript);
 
-  // Settings
   document.getElementById('cfg-show-key').addEventListener('change', function() {
     document.getElementById('cfg-api-key').type = this.checked ? 'text' : 'password';
   });
   document.getElementById('cfg-save-btn').addEventListener('click', saveSettings);
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // UTILS
-// ═══════════════════════════════════════════════════════════════════
-function shuffle(arr) {
-  const a = [...arr];
+// ══════════════════════════════════════════════════════════════════
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
 }
+function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
-function escapeRe(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// ═══════════════════════════════════════════════════════════════════
 init();
 </script>
 </body>
