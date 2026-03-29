@@ -523,6 +523,32 @@ mark {
 }
 #ask-input::placeholder { color: var(--text3); }
 
+/* API status button */
+#api-status-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  font-family: var(--f);
+  cursor: pointer;
+  border: none;
+  transition: background .2s, color .2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+#api-status-btn.unknown { background: var(--surf3); color: var(--text2); }
+#api-status-btn.ok      { background: rgba(74,222,128,.15); color: #4ade80; border: 1px solid rgba(74,222,128,.25); }
+#api-status-btn.fail    { background: rgba(248,113,113,.15); color: var(--danger); border: 1px solid rgba(248,113,113,.25); }
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.unknown .status-dot { background: var(--text3); }
+.ok      .status-dot { background: #4ade80; box-shadow: 0 0 6px rgba(74,222,128,.6); }
+.fail    .status-dot { background: var(--danger); box-shadow: 0 0 6px rgba(248,113,113,.6); }
+
 /* ─────────────────────────────────────────────────────────────────
    SCRIPTS
 ───────────────────────────────────────────────────────────────── */
@@ -858,7 +884,12 @@ mark {
 
       <!-- Ask AI sub-panel -->
       <div class="sub-panel" id="pol-ask">
-        <div class="chip-bar" id="ask-pol-selector"></div>
+        <div class="chip-bar" id="ask-pol-selector" style="align-items:center">
+          <div style="flex:1"></div>
+          <button id="api-status-btn" class="unknown" onclick="testApiKey()">
+            <span class="status-dot"></span><span id="api-status-lbl">Test API</span>
+          </button>
+        </div>
         <div id="ask-body">
           <div id="ask-empty">
             <div class="ask-icon">✦</div>
@@ -945,6 +976,10 @@ mark {
               <label class="toggle-label">
                 <input type="checkbox" id="cfg-show-key"> Show
               </label>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--s-3)">
+              <button class="btn btn-accent" id="cfg-save-key-btn">Add Key</button>
+              <span class="saved-msg" id="cfg-key-saved" style="margin-top:0"></span>
             </div>
           </div>
 
@@ -1069,11 +1104,25 @@ function loadSettings() {
   document.getElementById('cfg-api-key').value = s.apiKey || '';
   document.getElementById('cfg-rules').value   = s.rules  || '';
 }
+function saveApiKey() {
+  const key = document.getElementById('cfg-api-key').value.trim();
+  const s = getSettings();
+  localStorage.setItem('bumble_settings', JSON.stringify({ ...s, apiKey: key }));
+  document.getElementById('cfg-api-key').value = '';
+  document.getElementById('cfg-show-key').checked = false;
+  document.getElementById('cfg-api-key').type = 'password';
+  const m = document.getElementById('cfg-key-saved');
+  m.textContent = 'Done!';
+  setTimeout(() => m.textContent = '', 3000);
+  setApiStatus('unknown');
+}
 function saveSettings() {
+  const s = getSettings();
   localStorage.setItem('bumble_settings', JSON.stringify({
-    apiKey: document.getElementById('cfg-api-key').value.trim(),
-    rules:  document.getElementById('cfg-rules').value.trim(),
+    ...s,
+    rules: document.getElementById('cfg-rules').value.trim(),
   }));
+  document.getElementById('cfg-rules').value = '';
   const m = document.getElementById('cfg-saved');
   m.textContent = 'Saved ✓';
   setTimeout(() => m.textContent = '', 3000);
@@ -1127,7 +1176,8 @@ function polSearch(q) {
 // ══════════════════════════════════════════════════════════════════
 function buildAskPolSelector() {
   const bar = document.getElementById('ask-pol-selector');
-  bar.innerHTML = '';
+  // Remove only chip elements, keep the status button
+  bar.querySelectorAll('.chip').forEach(c => c.remove());
   POL_NAMES.forEach((n, i) => {
     const label = n.includes('BFF') ? 'BFF' : n.split(' ')[0];
     const el = Object.assign(document.createElement('div'), {
@@ -1135,7 +1185,8 @@ function buildAskPolSelector() {
       textContent: label, title: n
     });
     el.onclick = () => selectAskPolicy(i);
-    bar.appendChild(el);
+    // Insert chips before the status button
+    bar.insertBefore(el, document.getElementById('api-status-btn'));
   });
   buildSuggestions();
 }
@@ -1363,6 +1414,40 @@ function openScrContent()  { document.getElementById('scripts-main').classList.a
 function closeScrContent() { document.getElementById('scripts-main').classList.remove('show-content'); }
 
 // ══════════════════════════════════════════════════════════════════
+// API STATUS
+// ══════════════════════════════════════════════════════════════════
+function setApiStatus(state, label) {
+  const btn = document.getElementById('api-status-btn');
+  const lbl = document.getElementById('api-status-lbl');
+  btn.className = state;
+  lbl.textContent = label || (state === 'ok' ? 'API connected' : state === 'fail' ? 'API error' : 'Test API');
+}
+
+async function testApiKey() {
+  const { apiKey } = getSettings();
+  if (!apiKey) { setApiStatus('fail', 'No key saved'); return; }
+  setApiStatus('unknown', 'Testing…');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 5,
+        messages: [{ role: 'user', content: 'hi' }],
+      }),
+    });
+    if (res.ok) setApiStatus('ok');
+    else { const d = await res.json(); setApiStatus('fail', d.error?.type || 'API error'); }
+  } catch { setApiStatus('fail', 'Network error'); }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // POL TABS
 // ══════════════════════════════════════════════════════════════════
 function showPolTab(tab) {
@@ -1401,6 +1486,7 @@ function bindEvents() {
   document.getElementById('cfg-show-key').addEventListener('change', function() {
     document.getElementById('cfg-api-key').type = this.checked ? 'text' : 'password';
   });
+  document.getElementById('cfg-save-key-btn').addEventListener('click', saveApiKey);
   document.getElementById('cfg-save-btn').addEventListener('click', saveSettings);
 }
 
