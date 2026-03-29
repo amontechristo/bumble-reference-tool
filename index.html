@@ -1125,7 +1125,11 @@ async function init() {
   S.scripts  = stored ? JSON.parse(stored) : data.templates;
   S.filtered = [...S.scripts];
 
-  POL_QUESTIONS[POL_NAMES[0]] = [
+  const bumbleKey = POL_NAMES.find(n => n.toLowerCase().includes('bumble') && !n.toLowerCase().includes('bff'));
+  const badooKey  = POL_NAMES.find(n => n.toLowerCase().includes('badoo'));
+  const bffKey    = POL_NAMES.find(n => n.toLowerCase().includes('bff'));
+
+  if (bumbleKey) POL_QUESTIONS[bumbleKey] = [
     "What personal data does Bumble collect?",
     "How long does Bumble retain user data?",
     "Can users request deletion of their data?",
@@ -1135,7 +1139,7 @@ async function init() {
     "How does Bumble use data for advertising?",
     "What security measures protect user data?",
   ];
-  POL_QUESTIONS[POL_NAMES[1]] = [
+  if (badooKey) POL_QUESTIONS[badooKey] = [
     "What data does Badoo collect from users?",
     "How is user data used for advertising?",
     "Can users opt out of data processing?",
@@ -1145,7 +1149,7 @@ async function init() {
     "How does Badoo handle data from minors?",
     "What third parties receive Badoo user data?",
   ];
-  POL_QUESTIONS[POL_NAMES[2]] = [
+  if (bffKey) POL_QUESTIONS[bffKey] = [
     "How does BFF mode handle data differently?",
     "Is BFF data shared with the Bumble dating app?",
     "What safety features protect BFF users?",
