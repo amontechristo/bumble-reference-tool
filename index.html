@@ -1049,6 +1049,7 @@ mark {
             </div>
             <div style="display:flex;align-items:center;gap:var(--s-3)">
               <button class="btn btn-accent" id="cfg-save-key-btn">Add Key</button>
+              <button class="btn btn-danger" id="cfg-disconnect-btn">Disconnect</button>
               <span class="saved-msg" id="cfg-key-saved" style="margin-top:0"></span>
             </div>
           </div>
@@ -1187,6 +1188,16 @@ function loadSettings() {
   const s = JSON.parse(localStorage.getItem('bumble_settings') || '{}');
   document.getElementById('cfg-api-key').value = s.apiKey || '';
   document.getElementById('cfg-rules').value   = s.rules  || '';
+}
+function disconnectApi() {
+  const s = getSettings();
+  localStorage.setItem('bumble_settings', JSON.stringify({ ...s, apiKey: '' }));
+  document.getElementById('cfg-api-key').value = '';
+  const m = document.getElementById('cfg-key-saved');
+  m.style.color = 'var(--danger)';
+  m.textContent = 'Disconnected';
+  setTimeout(() => { m.textContent = ''; m.style.color = ''; }, 3000);
+  setApiStatus('unknown');
 }
 function saveApiKey() {
   const key = document.getElementById('cfg-api-key').value.trim();
@@ -1598,6 +1609,7 @@ function bindEvents() {
     document.getElementById('cfg-api-key').type = this.checked ? 'text' : 'password';
   });
   document.getElementById('cfg-save-key-btn').addEventListener('click', saveApiKey);
+  document.getElementById('cfg-disconnect-btn').addEventListener('click', disconnectApi);
   document.getElementById('cfg-save-btn').addEventListener('click', saveSettings);
 }
 
