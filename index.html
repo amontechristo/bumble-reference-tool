@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bumble Reference Tool</title>
+<style>
+:root {
+  --header:  #2a2a2a;
+  --body:    #1e1e1e;
+  --sidebar: #252525;
+  --textbox: #252525;
+  --search:  #2a2a2a;
+  --border:  #3a3a3a;
+  --accent:  #FFD500;
+  --text:    #e0e0e0;
+  --dim:     #888888;
+  --selfg:   #1d1d1f;
+  --userbg:  #2d2b00;
+  --aibg:    #2a2a2a;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: -apple-system, "SF Pro Text", system-ui, sans-serif; background: var(--body); color: var(--text); font-size: 14px; }
+
+/* ── Layout ── */
+#app         { display: flex; flex-direction: column; height: 100vh; }
+#header      { background: var(--header); padding: 16px 24px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+#header h1   { font-size: 16px; font-weight: 700; color: var(--accent); }
+#body        { display: flex; flex: 1; overflow: hidden; }
+#nav         { width: 200px; background: var(--sidebar); flex-shrink: 0; border-right: 1px solid var(--border); padding-top: 16px; }
+#content     { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+/* ── Nav items ── */
+.nav-item    { padding: 16px 22px; cursor: pointer; font-size: 14px; color: var(--text); transition: background .15s; }
+.nav-item:hover { background: #2e2e2e; }
+.nav-item.active { background: #2d2b00; color: var(--accent); font-weight: 700; }
+
+/* ── Panels ── */
+.panel       { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+.panel.active { display: flex; }
+
+/* ── Tab bars ── */
+.tab-bar     { display: flex; background: var(--header); padding: 0 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.tab-btn     { padding: 11px 14px 0; cursor: pointer; font-size: 12px; color: var(--dim); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; user-select: none; }
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); font-weight: 700; border-bottom-color: var(--accent); }
+.sub-tab-bar { display: flex; background: var(--body); padding: 0 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.sub-tab-btn { padding: 9px 14px 0; cursor: pointer; font-size: 12px; color: var(--dim); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; user-select: none; }
+.sub-tab-btn:hover { color: var(--text); }
+.sub-tab-btn.active { color: var(--accent); font-weight: 700; border-bottom-color: var(--accent); }
+
+/* ── Sub-panels ── */
+.sub-panel   { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+.sub-panel.active { display: flex; }
+
+/* ── Toolbar ── */
+.toolbar     { display: flex; align-items: center; gap: 8px; padding: 14px 20px; flex-shrink: 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.toolbar input[type=text], .toolbar input[type=search] {
+  background: var(--search); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 12px; font-size: 13px; outline: none;
+  transition: border-color .15s; font-family: inherit; width: 240px;
+}
+.toolbar input:focus { border-color: var(--accent); }
+.toolbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+/* ── Buttons ── */
+.btn { padding: 8px 18px; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s; font-family: inherit; }
+.btn-accent  { background: var(--accent); color: var(--selfg); }
+.btn-accent:hover { background: #e6bf00; }
+.btn-dark    { background: var(--sidebar); color: var(--text); }
+.btn-dark:hover { background: #333; }
+.btn-danger  { background: #5a1a1a; color: #ff6b6b; }
+.btn-danger:hover { background: #6a2020; }
+.btn-sm      { padding: 6px 12px; font-size: 11px; }
+
+/* ── Policy / Script text ── */
+.text-viewer {
+  flex: 1; overflow-y: auto; background: var(--textbox);
+  padding: 20px 24px; font-size: 13px; line-height: 1.7;
+  white-space: pre-wrap; word-break: break-word;
+}
+mark { background: var(--accent); color: var(--selfg); border-radius: 2px; padding: 0 1px; }
+
+/* ── Search match count ── */
+.match-count { font-size: 11px; color: var(--accent); min-width: 80px; }
+
+/* ── Two-column scripts ── */
+#scripts-main    { display: flex; flex: 1; overflow: hidden; }
+#scripts-list    { width: 250px; flex-shrink: 0; background: var(--sidebar); border-right: 1px solid var(--border); overflow-y: auto; }
+#scripts-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.script-item { padding: 10px 14px; cursor: pointer; font-size: 13px; border-radius: 6px; margin: 2px 8px; transition: background .15s; }
+.script-item:hover { background: #2e2e2e; }
+.script-item.active { background: #2d2b00; color: var(--accent); font-weight: 700; }
+#scripts-list-inner { padding: 8px 0; }
+
+/* ── Script title ── */
+#script-title-wrap  { padding: 14px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+#script-title-lbl   { font-size: 15px; font-weight: 700; color: var(--accent); }
+#script-title-input {
+  font-size: 15px; font-weight: 700; color: var(--accent);
+  background: var(--search); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 10px; width: 100%;
+  outline: none; font-family: inherit; display: none;
+}
+#script-title-input:focus { border-color: var(--accent); }
+#script-body-wrap   { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 0 24px 16px; }
+#script-body        { flex: 1; overflow-y: auto; background: var(--textbox); font-size: 14px; line-height: 1.7; padding: 16px 18px; white-space: pre-wrap; word-break: break-word; border-radius: 4px; margin-top: 12px; resize: none; color: var(--text); font-family: inherit; border: none; outline: none; cursor: default; }
+#script-body.editable { cursor: text; border: 1px solid var(--border); }
+#script-body.editable:focus { border-color: var(--accent); }
+
+/* ── Ask AI ── */
+#ask-middle { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+#ask-empty  { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; }
+#ask-empty h2 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+#ask-empty .subtitle { font-size: 13px; color: var(--dim); margin-bottom: 32px; }
+#sugg-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 700px; width: 100%; }
+.sugg-card  { background: var(--sidebar); border-radius: 8px; padding: 14px 16px; cursor: pointer; text-align: left; font-size: 12px; color: var(--text); transition: background .15s; border: 1px solid var(--border); line-height: 1.5; }
+.sugg-card:hover { background: #2e2e2e; }
+#chat-area  { flex: 1; overflow-y: auto; padding: 16px 24px; display: none; flex-direction: column; gap: 10px; }
+#chat-area.visible { display: flex; }
+.msg-row    { display: flex; }
+.msg-row.user { justify-content: flex-end; }
+.msg-row.assistant, .msg-row.system { justify-content: flex-start; }
+.bubble     { max-width: 75%; padding: 10px 14px; border-radius: 10px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.bubble.user      { background: var(--userbg); color: var(--accent); }
+.bubble.assistant { background: var(--aibg); color: var(--text); border: 1px solid var(--border); }
+.bubble.system    { background: #3a2020; color: #ff6b6b; }
+#ask-input-area { padding: 16px 60px; flex-shrink: 0; background: var(--body); border-top: 1px solid var(--border); }
+#ask-input-wrap { display: flex; gap: 10px; background: var(--search); border: 1px solid var(--border); border-radius: 8px; padding: 6px 6px 6px 12px; align-items: flex-end; }
+#ask-input      { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; font-family: inherit; resize: none; min-height: 38px; max-height: 120px; line-height: 1.5; padding-top: 6px; }
+
+/* ── Settings ── */
+#settings-inner { flex: 1; overflow-y: auto; display: flex; align-items: flex-start; justify-content: center; padding: 40px 20px; }
+.settings-card  { background: var(--sidebar); border-radius: 10px; padding: 36px 40px; width: 100%; max-width: 560px; }
+.settings-card h2 { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.settings-card p  { font-size: 11px; color: var(--dim); margin-bottom: 14px; line-height: 1.5; }
+.settings-divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.settings-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.settings-card input[type=text], .settings-card input[type=password] {
+  flex: 1; background: var(--search); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 9px 12px; font-size: 13px; outline: none;
+  transition: border-color .15s; font-family: inherit;
+}
+.settings-card input:focus { border-color: var(--accent); }
+.settings-card textarea {
+  width: 100%; background: var(--search); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px 12px; font-size: 12px; outline: none;
+  transition: border-color .15s; font-family: inherit; resize: vertical; min-height: 120px;
+  line-height: 1.6;
+}
+.settings-card textarea:focus { border-color: var(--accent); }
+.settings-card label { font-size: 11px; color: var(--dim); cursor: pointer; user-select: none; display: flex; align-items: center; gap: 5px; }
+.settings-card label input[type=checkbox] { accent-color: var(--accent); }
+.saved-msg { font-size: 11px; color: #66bb6a; margin-top: 8px; min-height: 16px; }
+
+/* ── Scrollbars ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* ── Misc ── */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <div id="header"><h1>Bumble Reference Tool</h1></div>
+
+  <div id="body">
+
+    <!-- Left Nav -->
+    <nav id="nav">
+      <div class="nav-item active" data-section="policies">Privacy Policies</div>
+      <div class="nav-item"        data-section="scripts">Scripts</div>
+      <div class="nav-item"        data-section="settings">API Settings</div>
+    </nav>
+
+    <!-- Content -->
+    <div id="content">
+
+      <!-- ═══════════════════════════════ PRIVACY POLICIES ══════════════════ -->
+      <div class="panel active" id="panel-policies">
+
+        <!-- Top tabs: Policies | Ask AI -->
+        <div class="tab-bar" id="pol-tab-bar">
+          <div class="tab-btn active" data-tab="pol-policies">Policies</div>
+          <div class="tab-btn"        data-tab="pol-ask">Ask AI</div>
+        </div>
+
+        <!-- ── Policies sub-panel ── -->
+        <div class="sub-panel active" id="pol-policies">
+          <!-- Policy selector: Bumble | Badoo | BFF -->
+          <div class="sub-tab-bar" id="pol-selector"></div>
+          <!-- Search toolbar -->
+          <div class="toolbar">
+            <input type="search" id="pol-search" placeholder="Search policy…">
+            <span class="match-count" id="pol-match"></span>
+          </div>
+          <div class="text-viewer" id="pol-text"></div>
+        </div>
+
+        <!-- ── Ask AI sub-panel ── -->
+        <div class="sub-panel" id="pol-ask">
+          <!-- Policy selector inside Ask AI -->
+          <div class="sub-tab-bar" id="ask-pol-selector"></div>
+
+          <div id="ask-middle">
+            <!-- Empty state -->
+            <div id="ask-empty">
+              <h2 id="ask-title"></h2>
+              <p class="subtitle">Based on the selected privacy policy</p>
+              <div id="sugg-cards"></div>
+            </div>
+            <!-- Chat -->
+            <div id="chat-area"></div>
+          </div>
+
+          <!-- Input bar -->
+          <div id="ask-input-area">
+            <div id="ask-input-wrap">
+              <textarea id="ask-input" rows="1" placeholder="Ask a question…"></textarea>
+              <button class="btn btn-accent" id="ask-send-btn">Ask</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /panel-policies -->
+
+      <!-- ═══════════════════════════════════ SCRIPTS ═══════════════════════ -->
+      <div class="panel" id="panel-scripts">
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <input type="search" id="scr-search" placeholder="Search scripts…">
+          <div class="toolbar-right" id="scr-normal-bar">
+            <button class="btn btn-dark"   id="scr-new-btn">+ New</button>
+            <button class="btn btn-danger" id="scr-del-btn">Delete</button>
+            <button class="btn btn-dark"   id="scr-edit-btn">Edit</button>
+            <button class="btn btn-accent" id="scr-copy-btn">Copy to Clipboard</button>
+          </div>
+          <div class="toolbar-right hidden" id="scr-edit-bar">
+            <button class="btn btn-dark"   id="scr-cancel-btn">Cancel</button>
+            <button class="btn btn-accent" id="scr-save-btn">Save</button>
+          </div>
+        </div>
+
+        <!-- Two-column -->
+        <div id="scripts-main">
+          <div id="scripts-list"><div id="scripts-list-inner"></div></div>
+          <div id="scripts-content">
+            <div id="script-title-wrap">
+              <div id="script-title-lbl"></div>
+              <input type="text" id="script-title-input" placeholder="Script title…">
+            </div>
+            <div id="script-body-wrap">
+              <textarea id="script-body" readonly></textarea>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-scripts -->
+
+      <!-- ══════════════════════════════ API SETTINGS ═══════════════════════ -->
+      <div class="panel" id="panel-settings">
+        <div class="tab-bar"><div class="tab-btn active" style="pointer-events:none">API Settings</div></div>
+        <div id="settings-inner">
+          <div class="settings-card">
+            <h2>Anthropic API Key</h2>
+            <p>Used by the Ask AI tab to answer questions about privacy policies.</p>
+            <div class="settings-row">
+              <input type="password" id="cfg-api-key" placeholder="sk-ant-…">
+              <label><input type="checkbox" id="cfg-show-key"> Show</label>
+            </div>
+
+            <hr class="settings-divider">
+
+            <h2>Response Rules</h2>
+            <p>Custom instructions added to every AI response. One rule per line.<br>
+            Examples: "Always respond in English" · "Cite the policy section" · "Keep answers under 3 sentences"</p>
+            <textarea id="cfg-rules" placeholder="Write your rules here…"></textarea>
+
+            <hr class="settings-divider">
+
+            <button class="btn btn-accent" id="cfg-save-btn">Save Settings</button>
+            <div class="saved-msg" id="cfg-saved"></div>
+          </div>
+        </div>
+      </div><!-- /panel-settings -->
+
+    </div><!-- /content -->
+  </div><!-- /body -->
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+const S = {
+  polIdx:    0,
+  askPolIdx: 0,
+  scripts:   [],
+  filtered:  [],
+  selIdx:    -1,
+  editMode:  false,
+  chat:      [],
+  asking:    false,
+};
+
+let POLICIES  = {};
+let POL_NAMES = [];
+
+const POL_QUESTIONS = {};  // filled after data loads
+
+const DEFAULT_QUESTIONS = [
+  "What data is collected from users?",
+  "How is personal data protected?",
+  "What are users' privacy rights?",
+  "How can users delete their account?",
+  "Does this policy comply with GDPR?",
+  "How long is data retained?",
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+async function init() {
+  const data = await fetch('bumble_tool_data.json').then(r => r.json());
+  POLICIES  = data.policies;
+  POL_NAMES = Object.keys(POLICIES);
+
+  // Scripts: use localStorage if available, else seed from JSON
+  const stored = localStorage.getItem('bumble_scripts');
+  S.scripts = stored ? JSON.parse(stored) : data.templates;
+  S.filtered = [...S.scripts];
+
+  // Suggested questions (defined after POL_NAMES known)
+  POL_QUESTIONS[POL_NAMES[0]] = [
+    "What personal data does Bumble collect from users?",
+    "How long does Bumble retain user data?",
+    "Can users request deletion of their personal data?",
+    "Does Bumble share data with third-party companies?",
+    "How does Bumble handle location data?",
+    "What rights do users have under GDPR?",
+    "How does Bumble use data for advertising?",
+    "What security measures protect user data?",
+  ];
+  POL_QUESTIONS[POL_NAMES[1]] = [
+    "What data does Badoo collect from users?",
+    "How is user data used for advertising on Badoo?",
+    "Can users opt out of data processing?",
+    "How do I permanently delete my Badoo account?",
+    "What cookies and tracking technologies does Badoo use?",
+    "Where is Badoo user data stored?",
+    "How does Badoo handle data from minors?",
+    "What third parties receive Badoo user data?",
+  ];
+  POL_QUESTIONS[POL_NAMES[2]] = [
+    "How does BFF mode handle data differently from Bumble?",
+    "Is BFF data shared with the main Bumble dating app?",
+    "What safety features protect BFF users?",
+    "What data is visible to other BFF users?",
+    "How does BFF verify user identity?",
+    "Can I use Bumble BFF without sharing personal data?",
+    "How do I report a privacy concern in BFF mode?",
+    "What data is collected when swiping in BFF mode?",
+  ];
+
+  loadSettings();
+  buildPolSelector();
+  buildAskPolSelector();
+  selectPolicy(0);
+  populateScripts();
+  if (S.scripts.length) selectScript(0);
+  bindEvents();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════════════
+function loadSettings() {
+  const s = JSON.parse(localStorage.getItem('bumble_settings') || '{}');
+  document.getElementById('cfg-api-key').value = s.apiKey || '';
+  document.getElementById('cfg-rules').value   = s.rules  || '';
+}
+
+function saveSettings() {
+  const s = {
+    apiKey: document.getElementById('cfg-api-key').value.trim(),
+    rules:  document.getElementById('cfg-rules').value.trim(),
+  };
+  localStorage.setItem('bumble_settings', JSON.stringify(s));
+  const msg = document.getElementById('cfg-saved');
+  msg.textContent = 'Saved successfully.';
+  setTimeout(() => msg.textContent = '', 3000);
+}
+
+function getSettings() {
+  return JSON.parse(localStorage.getItem('bumble_settings') || '{}');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+function showSection(section) {
+  if (S.editMode) cancelEdit();
+  document.querySelectorAll('.nav-item').forEach(el =>
+    el.classList.toggle('active', el.dataset.section === section));
+  document.querySelectorAll('.panel').forEach(el =>
+    el.classList.toggle('active', el.id === `panel-${section}`));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// POLICIES
+// ═══════════════════════════════════════════════════════════════════
+function buildPolSelector() {
+  const bar = document.getElementById('pol-selector');
+  bar.innerHTML = '';
+  POL_NAMES.forEach((name, i) => {
+    const label = name.includes('BFF') ? 'BFF' : name.split(' ')[0];
+    const btn = document.createElement('div');
+    btn.className = 'sub-tab-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = label;
+    btn.title = name;
+    btn.onclick = () => selectPolicy(i);
+    bar.appendChild(btn);
+  });
+}
+
+function selectPolicy(idx) {
+  S.polIdx = idx;
+  document.querySelectorAll('#pol-selector .sub-tab-btn').forEach((b, i) =>
+    b.classList.toggle('active', i === idx));
+  const text = POLICIES[POL_NAMES[idx]];
+  const viewer = document.getElementById('pol-text');
+  viewer.textContent = text;
+  document.getElementById('pol-search').value = '';
+  document.getElementById('pol-match').textContent = '';
+}
+
+function polSearch(q) {
+  const viewer = document.getElementById('pol-text');
+  const raw = POLICIES[POL_NAMES[S.polIdx]];
+  if (!q) {
+    viewer.textContent = raw;
+    document.getElementById('pol-match').textContent = '';
+    return;
+  }
+  const lq = q.toLowerCase();
+  const parts = raw.split(new RegExp(`(${escapeRe(q)})`, 'gi'));
+  viewer.innerHTML = '';
+  let count = 0;
+  parts.forEach(p => {
+    if (p.toLowerCase() === lq) {
+      const m = document.createElement('mark'); m.textContent = p;
+      viewer.appendChild(m); count++;
+    } else {
+      viewer.appendChild(document.createTextNode(p));
+    }
+  });
+  const n = count;
+  document.getElementById('pol-match').textContent =
+    n ? `${n} match${n !== 1 ? 'es' : ''}` : 'No matches';
+  if (n) viewer.querySelector('mark')?.scrollIntoView({ block: 'center' });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ASK AI
+// ═══════════════════════════════════════════════════════════════════
+function buildAskPolSelector() {
+  const bar = document.getElementById('ask-pol-selector');
+  bar.innerHTML = '';
+  POL_NAMES.forEach((name, i) => {
+    const label = name.includes('BFF') ? 'BFF' : name.split(' ')[0];
+    const btn = document.createElement('div');
+    btn.className = 'sub-tab-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = label;
+    btn.title = name;
+    btn.onclick = () => selectAskPolicy(i);
+    bar.appendChild(btn);
+  });
+  buildSuggestions();
+}
+
+function selectAskPolicy(idx) {
+  const prev = S.askPolIdx;
+  S.askPolIdx = idx;
+  document.querySelectorAll('#ask-pol-selector .sub-tab-btn').forEach((b, i) =>
+    b.classList.toggle('active', i === idx));
+  if (idx !== prev) {
+    S.chat = [];
+    S.asking = false;
+    resetChatUI();
+  }
+  buildSuggestions();
+}
+
+function buildSuggestions() {
+  const name = POL_NAMES[S.askPolIdx];
+  document.getElementById('ask-title').textContent = name;
+  const pool = POL_QUESTIONS[name] || DEFAULT_QUESTIONS;
+  const chosen = shuffle(pool).slice(0, 3);
+  const container = document.getElementById('sugg-cards');
+  container.innerHTML = '';
+  chosen.forEach(q => {
+    const card = document.createElement('div');
+    card.className = 'sugg-card';
+    card.textContent = q;
+    card.onclick = () => askWith(q);
+    container.appendChild(card);
+  });
+}
+
+function resetChatUI() {
+  document.getElementById('ask-empty').style.display = '';
+  const area = document.getElementById('chat-area');
+  area.classList.remove('visible');
+  area.innerHTML = '';
+  buildSuggestions();
+}
+
+function askWith(q) {
+  document.getElementById('ask-input').value = q;
+  sendQuestion();
+}
+
+async function sendQuestion() {
+  if (S.asking) return;
+  const input = document.getElementById('ask-input');
+  const question = input.value.trim();
+  if (!question) return;
+
+  const settings = getSettings();
+  if (!settings.apiKey) {
+    addMessage('system', 'Please set your Anthropic API key in API Settings.');
+    return;
+  }
+
+  input.value = '';
+  addMessage('user', question);
+  addMessage('assistant', 'Thinking…');
+  S.asking = true;
+  const btn = document.getElementById('ask-send-btn');
+  btn.textContent = '…'; btn.disabled = true;
+
+  const polName = POL_NAMES[S.askPolIdx];
+  const polText = POLICIES[polName];
+  const rules   = settings.rules || '';
+  const history = S.chat.slice(0, -1)
+    .filter(m => m.role !== 'system' && m.content !== 'Thinking…')
+    .map(m => ({ role: m.role, content: m.content }));
+
+  const system = [
+    "You are a privacy policy expert helping a Bumble support agent.",
+    "Answer questions based ONLY on the following policy document.\n",
+    `Policy: ${polName}\n\n${polText}`,
+    rules ? `\n\nAdditional rules you must follow:\n${rules}` : ''
+  ].join('\n');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': settings.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system,
+        messages: [...history, { role: 'user', content: question }],
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || res.statusText);
+    replaceLastMessage(data.content[0].text);
+  } catch (err) {
+    replaceLastMessage(`Error: ${err.message}`);
+  } finally {
+    S.asking = false;
+    btn.textContent = 'Ask'; btn.disabled = false;
+  }
+}
+
+function addMessage(role, content) {
+  S.chat.push({ role, content });
+  renderChat();
+}
+
+function replaceLastMessage(content) {
+  if (S.chat.length) S.chat[S.chat.length - 1].content = content;
+  renderChat();
+}
+
+function renderChat() {
+  if (S.chat.length) {
+    document.getElementById('ask-empty').style.display = 'none';
+    const area = document.getElementById('chat-area');
+    area.classList.add('visible');
+    area.innerHTML = '';
+    S.chat.forEach(m => {
+      const row = document.createElement('div');
+      row.className = `msg-row ${m.role}`;
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${m.role}`;
+      bubble.textContent = m.content;
+      row.appendChild(bubble);
+      area.appendChild(row);
+    });
+    area.scrollTop = area.scrollHeight;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SCRIPTS
+// ═══════════════════════════════════════════════════════════════════
+function saveScriptsToDisk() {
+  localStorage.setItem('bumble_scripts', JSON.stringify(S.scripts));
+}
+
+function populateScripts() {
+  S.filtered = [...S.scripts];
+  renderScriptList();
+}
+
+function filterScripts(q) {
+  const lq = q.toLowerCase().trim();
+  S.filtered = lq
+    ? S.scripts.filter(t => t.title.toLowerCase().includes(lq) || t.body.toLowerCase().includes(lq))
+    : [...S.scripts];
+  renderScriptList();
+  if (S.filtered.length) selectScript(0);
+}
+
+function renderScriptList() {
+  const container = document.getElementById('scripts-list-inner');
+  container.innerHTML = '';
+  S.filtered.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'script-item' + (i === S.selIdx ? ' active' : '');
+    el.textContent = t.title;
+    el.onclick = () => selectScript(i);
+    container.appendChild(el);
+  });
+}
+
+function selectScript(idx) {
+  if (S.editMode) cancelEdit();
+  S.selIdx = idx;
+  renderScriptList();
+  if (idx < 0 || idx >= S.filtered.length) return;
+  const t = S.filtered[idx];
+  document.getElementById('script-title-lbl').textContent   = t.title;
+  document.getElementById('script-title-input').style.display = 'none';
+  document.getElementById('script-title-lbl').style.display   = '';
+  const body = document.getElementById('script-body');
+  body.value    = t.body;
+  body.readOnly = true;
+  body.classList.remove('editable');
+}
+
+function newScript() {
+  S.editMode = true;
+  S.selIdx = -1;
+  renderScriptList();
+  document.getElementById('script-title-lbl').style.display   = 'none';
+  const inp = document.getElementById('script-title-input');
+  inp.style.display = '';
+  inp.value = 'New Script';
+  inp.select();
+  const body = document.getElementById('script-body');
+  body.value = '';
+  body.readOnly = false;
+  body.classList.add('editable');
+  body.style.cursor = 'text';
+  toggleEditBar(true);
+}
+
+function enterEdit() {
+  if (S.selIdx < 0 || S.selIdx >= S.filtered.length) return;
+  S.editMode = true;
+  const t = S.filtered[S.selIdx];
+  document.getElementById('script-title-lbl').style.display   = 'none';
+  const inp = document.getElementById('script-title-input');
+  inp.style.display = '';
+  inp.value = t.title;
+  const body = document.getElementById('script-body');
+  body.readOnly = false;
+  body.classList.add('editable');
+  body.style.cursor = 'text';
+  toggleEditBar(true);
+}
+
+function saveScript() {
+  const title = document.getElementById('script-title-input').value.trim();
+  if (!title) {
+    document.getElementById('script-title-input').style.borderColor = '#cc3333';
+    return;
+  }
+  document.getElementById('script-title-input').style.borderColor = '';
+  const body = document.getElementById('script-body').value.trimEnd();
+
+  const realIdx = S.selIdx >= 0 ? S.scripts.indexOf(S.filtered[S.selIdx]) : -1;
+  if (realIdx >= 0) {
+    S.scripts[realIdx] = { title, body };
+  } else {
+    S.scripts.push({ title, body });
+  }
+  saveScriptsToDisk();
+
+  S.filtered = [...S.scripts];
+  const newSelIdx = realIdx >= 0 ? S.filtered.indexOf(S.scripts[realIdx]) : S.scripts.length - 1;
+  S.editMode = false;
+  toggleEditBar(false);
+  renderScriptList();
+  selectScript(newSelIdx);
+}
+
+function cancelEdit() {
+  S.editMode = false;
+  toggleEditBar(false);
+  if (S.selIdx >= 0 && S.selIdx < S.filtered.length) {
+    selectScript(S.selIdx);
+  } else if (S.scripts.length) {
+    S.filtered = [...S.scripts];
+    renderScriptList();
+    selectScript(0);
+  }
+}
+
+function deleteScript() {
+  if (S.selIdx < 0 || S.selIdx >= S.filtered.length) return;
+  const t = S.filtered[S.selIdx];
+  if (!confirm(`Delete "${t.title}"?\nThis cannot be undone.`)) return;
+  const realIdx = S.scripts.indexOf(t);
+  if (realIdx >= 0) S.scripts.splice(realIdx, 1);
+  saveScriptsToDisk();
+  S.filtered = [...S.scripts];
+  renderScriptList();
+  const newIdx = Math.min(S.selIdx, S.filtered.length - 1);
+  S.selIdx = newIdx;
+  if (S.filtered.length) {
+    selectScript(newIdx);
+  } else {
+    document.getElementById('script-title-lbl').textContent = '';
+    document.getElementById('script-body').value = '';
+  }
+}
+
+function copyScript() {
+  if (S.selIdx < 0 || S.selIdx >= S.filtered.length) return;
+  navigator.clipboard.writeText(S.filtered[S.selIdx].body);
+}
+
+function toggleEditBar(editing) {
+  document.getElementById('scr-normal-bar').classList.toggle('hidden', editing);
+  document.getElementById('scr-edit-bar').classList.toggle('hidden', !editing);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// POL TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════════
+function showPolTab(tab) {
+  document.querySelectorAll('#pol-tab-bar .tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('#panel-policies .sub-panel').forEach(p =>
+    p.classList.toggle('active', p.id === tab));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════════════════
+function bindEvents() {
+  // Nav
+  document.querySelectorAll('.nav-item').forEach(el =>
+    el.addEventListener('click', () => showSection(el.dataset.section)));
+
+  // Policies top tabs
+  document.querySelectorAll('#pol-tab-bar .tab-btn').forEach(btn =>
+    btn.addEventListener('click', () => showPolTab(btn.dataset.tab)));
+
+  // Policy search
+  document.getElementById('pol-search').addEventListener('input', e =>
+    polSearch(e.target.value.trim()));
+
+  // Ask AI send
+  document.getElementById('ask-send-btn').addEventListener('click', sendQuestion);
+  document.getElementById('ask-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuestion(); }
+  });
+  // Auto-resize textarea
+  document.getElementById('ask-input').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
+
+  // Scripts
+  document.getElementById('scr-search').addEventListener('input',  e => filterScripts(e.target.value));
+  document.getElementById('scr-new-btn').addEventListener('click',  newScript);
+  document.getElementById('scr-edit-btn').addEventListener('click', enterEdit);
+  document.getElementById('scr-save-btn').addEventListener('click', saveScript);
+  document.getElementById('scr-cancel-btn').addEventListener('click', cancelEdit);
+  document.getElementById('scr-del-btn').addEventListener('click',  deleteScript);
+  document.getElementById('scr-copy-btn').addEventListener('click', copyScript);
+
+  // Settings
+  document.getElementById('cfg-show-key').addEventListener('change', function() {
+    document.getElementById('cfg-api-key').type = this.checked ? 'text' : 'password';
+  });
+  document.getElementById('cfg-save-btn').addEventListener('click', saveSettings);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function escapeRe(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
