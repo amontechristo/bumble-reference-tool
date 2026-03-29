@@ -501,12 +501,10 @@ mark {
   font-size: var(--t-xs); font-weight: 500;
   font-family: var(--f);
   cursor: pointer;
-  opacity: 0;
-  transition: opacity .15s, background .15s, color .15s;
+  transition: background .15s, color .15s;
 }
-.msg-row.assistant:hover .copy-bubble-btn { opacity: 1; }
 .copy-bubble-btn:hover { background: var(--surf3); color: var(--text); }
-.copy-bubble-btn.copied { color: var(--green); background: rgba(74,222,128,.1); opacity: 1; }
+.copy-bubble-btn.copied { color: var(--green); background: rgba(74,222,128,.1); }
 
 /* Input area */
 #ask-input-wrap {
