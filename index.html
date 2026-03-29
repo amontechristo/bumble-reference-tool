@@ -785,15 +785,14 @@ mark {
    WARNING MODAL
 ───────────────────────────────────────────────────────────────── */
 #warn-overlay {
-  display: none;
   position: fixed; inset: 0;
   background: rgba(0,0,0,.7);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  z-index: 999;
+  z-index: 9999;
+  display: none;
   align-items: center; justify-content: center;
 }
-#warn-overlay.show { display: flex; }
 #warn-box {
   background: var(--surf);
   border: 1px solid rgba(255,255,255,.08);
@@ -1497,20 +1496,18 @@ function deleteScript() {
 
 function copyScript() {
   if (S.selIdx < 0 || S.selIdx >= S.filtered.length) return;
-  navigator.clipboard.writeText(S.filtered[S.selIdx].body);
+  navigator.clipboard.writeText(S.filtered[S.selIdx].body).catch(() => {});
   showWarn();
 }
 function showWarn() {
-  const overlay = document.getElementById('warn-overlay');
-  // Re-trigger blink animation by removing and re-adding the element
   const txt = document.getElementById('warn-text');
   txt.style.animation = 'none';
-  txt.offsetHeight; // reflow
-  txt.style.animation = '';
-  overlay.classList.add('show');
+  void txt.offsetHeight;
+  txt.style.animation = 'warn-blink 0.4s ease-in-out 2';
+  document.getElementById('warn-overlay').style.display = 'flex';
 }
 function closeWarn() {
-  document.getElementById('warn-overlay').classList.remove('show');
+  document.getElementById('warn-overlay').style.display = 'none';
 }
 
 function toggleEditBar(on) {
