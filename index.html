@@ -1378,9 +1378,10 @@ function renderChat() {
       const btn = document.createElement('button'); btn.className = 'copy-bubble-btn';
       btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 8V2h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg> Copy`;
       btn.onclick = () => {
-        navigator.clipboard.writeText(content);
+        navigator.clipboard.writeText(content).catch(() => {});
         btn.textContent = 'Copied ✓'; btn.classList.add('copied');
         setTimeout(() => { btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 8V2h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg> Copy`; btn.classList.remove('copied'); }, 2000);
+        showWarn();
       };
       wrap.appendChild(bubble); wrap.appendChild(btn);
       row.appendChild(wrap);
@@ -1497,7 +1498,6 @@ function deleteScript() {
 function copyScript() {
   if (S.selIdx < 0 || S.selIdx >= S.filtered.length) return;
   navigator.clipboard.writeText(S.filtered[S.selIdx].body).catch(() => {});
-  showWarn();
 }
 function showWarn() {
   const txt = document.getElementById('warn-text');
